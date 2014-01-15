@@ -25,7 +25,6 @@ class Container(object):
         scope = self.scopes[scope_name]
         calls = kwargs.pop('calls', None)
         self.refs[name] = scope.define(name, factory, args, kwargs, calls)
-        self.refs[name]._repr = repr(factory)
         self.refs[name]._scope = scope_name
         return self.refs[name]
 
@@ -51,3 +50,4 @@ class Container(object):
 
     def get(self, name):
         return self.ref(name)()
+

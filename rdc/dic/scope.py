@@ -14,8 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 from rdc.dic.reference import Reference
 
+MODULE = re.compile(r"\w+(\.\w+)*$").match
 
 class Scope(object):
     """
@@ -28,8 +30,24 @@ class Scope(object):
 
     def define(self, name, factory, args=None, kwargs=None, calls=None):
         """Create definition and return a callable getter."""
+        src = factory
+
+        # simple "lazy import" implementation, borrowed from pkg_resources.EntryPoint.parse(...)
+        if not callable(factory):
+            _module, _attr = src.split(':', 1)
+            if not MODULE(_module):
+                raise ValueError('Invalid module name {0}'.format(_module))
+            def factory(*args, **kwargs):
+                entry = __import__(_module, globals(), globals(), ['__name__'])
+                try:
+                    entry = getattr(entry, _attr)
+                except AttributeError:
+                    raise ImportError('{0} has no {1} attribute.'.format(entry, attr))
+                return entry(*args, **kwargs)
+            factory.__name__ = src
+
         self.definitions[name] = (factory, args, kwargs, calls, )
-        return self.ref(name)
+        return self.ref(name, repr=src)
 
     def build(self, name):
         """Create an instance."""
@@ -40,8 +58,11 @@ class Scope(object):
         # build
         return Reference.dereference(factory)(*args, **kwargs)
 
-    def ref(self, name):
-        return Reference(self.build, name)
+    def ref(self, name, repr=None):
+        ref = Reference(self.build, name)
+        if repr is not None:
+            ref._repr = repr
+        return ref
 
 
 class CachedScope(Scope):
@@ -58,6 +79,3 @@ class CachedScope(Scope):
         if not name in self.services:
             self.services[name] = self.build(name)
         return self.services[name]
-
-    def ref(self, name):
-        return Reference(self.get, name)

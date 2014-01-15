@@ -36,9 +36,7 @@ class Reference(partial):
             r = super(Reference, self).__repr__()
 
         if self._scope is not None:
-            return '{0} ({1})'.format(r, self._scope)
+            return '{0} (scope:{1})'.format(r, self._scope)
         else:
             return r
-
-
 
