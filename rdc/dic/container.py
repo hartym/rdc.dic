@@ -9,13 +9,22 @@ from rdc.dic.scope import Scope, CachedScope
 
 
 class Container(object):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.refs = {}
         self.parameters = {}
         self.scopes = {
             'prototype': Scope(),
             'container': CachedScope(),
             }
+
+        self.configure(self, *args, **kwargs)
+
+    @staticmethod
+    def configure(self, *args, **kwargs):
+        pass
+
+    def load_module(self, name, *args, **kwargs):
+        __import__(name, fromlist=['Container']).Container.configure(self, *args, **kwargs)
 
     def define(self, name, factory, *args, **kwargs):
         if name in self.refs:

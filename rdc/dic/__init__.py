@@ -18,6 +18,6 @@ from rdc.dic.container import Container
 
 def debug_container(container):
     for name in sorted(container.refs.keys()):
-        print name, '=>', container.ref(name)
+        yield name, container.ref(name)
 
 __all__ = [Container, debug_container]

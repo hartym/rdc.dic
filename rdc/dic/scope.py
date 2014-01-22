@@ -38,11 +38,17 @@ class Scope(object):
             if not MODULE(_module):
                 raise ValueError('Invalid module name {0}'.format(_module))
             def factory(*args, **kwargs):
-                entry = __import__(_module, globals(), globals(), ['__name__'])
+                try:
+                    entry = __import__(_module, globals(), globals(), ['__name__'])
+                except:
+                    print 'Could not import {0}'.format(_module)
+                    raise
+
                 try:
                     entry = getattr(entry, _attr)
                 except AttributeError:
-                    raise ImportError('{0} has no {1} attribute.'.format(entry, attr))
+                    print '{0} has no {1} attribute.'.format(entry, _attr)
+                    raise
                 return entry(*args, **kwargs)
             factory.__name__ = src
 
