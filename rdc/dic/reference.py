@@ -16,27 +16,20 @@
 
 from functools import partial
 
-
-class Reference(partial):
-    def __init__(self, func, *args, **keywords):
-        self._repr = None
-        self._scope = None
-        super(Reference, self).__init__(func, *args, **keywords)
-
-    @classmethod
-    def dereference(cls, ref_or_val):
-        while isinstance(ref_or_val, Reference):
-            ref_or_val = ref_or_val()
-        return ref_or_val
-
+class _partial(partial):
     def __repr__(self):
-        if self._repr is not None:
-            r = self._repr
-        else:
-            r = super(Reference, self).__repr__()
+        return unicode(self.repr) if hasattr(self, 'repr') else repr(self.func)
 
-        if self._scope is not None:
-            return '{0} (scope:{1})'.format(r, self._scope)
-        else:
-            return r
+def reference(mixed, *args, **kwargs):
+    _repr = kwargs.pop('_repr', None)
+
+    if callable(mixed):
+        p = _partial(mixed, *args, **kwargs)
+        if _repr:
+            p.repr = _repr
+        return p
+
+    def _reference(value=mixed):
+        return value
+    return _reference
 

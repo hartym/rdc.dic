@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import re
-from rdc.dic.reference import Reference
+from rdc.dic.reference import reference
 
 MODULE = re.compile(r"\w+(\.\w+)*$").match
 
@@ -28,46 +28,19 @@ class Scope(object):
         self.container = container
         self.definitions = {}
 
-    def define(self, name, factory, args=None, kwargs=None, calls=None):
+    def define(self, name, definition):
         """Create definition and return a callable getter."""
-        src = factory
-
-        # simple "lazy import" implementation, borrowed from pkg_resources.EntryPoint.parse(...)
-        if not callable(factory):
-            _module, _attr = src.split(':', 1)
-            if not MODULE(_module):
-                raise ValueError('Invalid module name {0}'.format(_module))
-            def factory(*args, **kwargs):
-                try:
-                    entry = __import__(_module, globals(), globals(), ['__name__'])
-                except:
-                    print 'Could not import {0}'.format(_module)
-                    raise
-
-                try:
-                    entry = getattr(entry, _attr)
-                except AttributeError:
-                    print '{0} has no {1} attribute.'.format(entry, _attr)
-                    raise
-                return entry(*args, **kwargs)
-            factory.__name__ = src
-
-        self.definitions[name] = (factory, args, kwargs, calls, )
-        return self.ref(name, repr=src)
+        self.definitions[name] = definition
+        return self.ref(name, repr=definition)
 
     def build(self, name):
         """Create an instance."""
-        # get definition
-        factory, args, kwargs, calls = self.definitions[name]
-        # defaults and dereferencing
-        args, kwargs = map(Reference.dereference, args or ()), dict((_k, Reference.dereference(_v)) for _k, _v in (kwargs or {}).iteritems())
-        # build
-        return Reference.dereference(factory)(*args, **kwargs)
+        return self.definitions[name]()
 
     def ref(self, name, repr=None):
-        ref = Reference(self.build, name)
+        ref = reference(self.build, name)
         if repr is not None:
-            ref._repr = repr
+            ref.repr = repr
         return ref
 
 
