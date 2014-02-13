@@ -17,6 +17,8 @@
 from functools import partial
 
 class _partial(partial):
+    __reference__ = True
+
     def __repr__(self):
         return unicode(self.repr) if hasattr(self, 'repr') else repr(self.func)
 
@@ -31,5 +33,6 @@ def reference(mixed, *args, **kwargs):
 
     def _reference(value=mixed):
         return value
+    _reference.__reference__ = True
     return _reference
 

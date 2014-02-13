@@ -8,11 +8,13 @@ SETATTR = object()
 module_regex = re.compile(r"\w+(\.\w+)*$").match
 
 def dereference( ref_or_val):
-    while isinstance(ref_or_val, (partial, Definition, )):
+    while callable(ref_or_val) and hasattr(ref_or_val, '__reference__') and ref_or_val.__reference__:
         ref_or_val = ref_or_val()
     return ref_or_val
 
 class Definition(object):
+    __reference__ = True
+
     def __init__(self, factory, *args, **kwargs):
         self._factory = factory
         self._args = list(args) if args else []
