@@ -8,6 +8,8 @@ from rdc.dic.reference import reference
 from rdc.dic.scope import Scope, CachedScope
 
 class Container(object):
+    configure = None
+
     def __init__(self, *args, **kwargs):
         self.refs = {
             'container': reference(self)
@@ -18,11 +20,10 @@ class Container(object):
             'container': CachedScope(),
             }
 
-        self.configure(self, *args, **kwargs)
+        self.set_parameters(kwargs)
 
-    @staticmethod
-    def configure(self, *args, **kwargs):
-        pass
+        if callable(self.configure):
+            self.configure(self, *args)
 
     def load_module(self, name, *args, **kwargs):
         __import__(name, fromlist=['Container']).Container.configure(self, *args, **kwargs)
@@ -62,6 +63,8 @@ class Container(object):
         return ['.'.join(filter(None, [namespace, arg])) for arg in args]
 
     def ref(self, name):
+        if not name in self.refs:
+            raise KeyError('Undefined service "{0}" requested.'.format(name))
         return self.refs[name]
 
     def get(self, name):

@@ -7,10 +7,21 @@ CALL = object()
 SETATTR = object()
 module_regex = re.compile(r"\w+(\.\w+)*$").match
 
-def dereference( ref_or_val):
-    while callable(ref_or_val) and hasattr(ref_or_val, '__reference__') and ref_or_val.__reference__:
-        ref_or_val = ref_or_val()
-    return ref_or_val
+def dereference( x):
+    # While x is a reference, resolve it.
+    while callable(x) and hasattr(x, '__reference__') and x.__reference__:
+        x = x()
+
+    # If x is a list, dereference each items into a new list
+    if type(x) is list:
+        x = list(dereference(i) for i in x)
+    # If x is a tuple, dereference each items into a new list
+    elif type(x) is tuple:
+        x = tuple(dereference(i) for i in x)
+
+    # TODO: how to be more generic ?
+
+    return x
 
 class Definition(object):
     __reference__ = True
@@ -48,6 +59,7 @@ class Definition(object):
 
             factory.__name__ = self._factory
             self._factory = factory
+
         return self._factory
 
     def call(self, attr, *args, **kwargs):
@@ -59,7 +71,18 @@ class Definition(object):
     def __call__(self, *args, **kwargs):
         a = map(dereference, self._args + list(args))
         k = dict((_k, dereference(_v)) for _k, _v in itertools.chain(self._kwargs.iteritems(), kwargs.iteritems()))
-        return dereference(self.factory)(*a, **k)
+        o = dereference(self.factory)(*a, **k)
+
+        for _type, _args in self._setup:
+            if _type == CALL:
+                attr, args, kwargs = _args
+                args = map(dereference, args)
+                kwargs = dict((_k, dereference(_v)) for _k, _v in kwargs.iteritems())
+                getattr(o, attr)(*args, **kwargs)
+            else:
+                raise NotImplementedError('not implemented')
+
+        return o
 
     def __repr__(self):
         return '<Definition factory="{0}" *{1} **{2}>'.format(self._factory, self._args, self._kwargs)

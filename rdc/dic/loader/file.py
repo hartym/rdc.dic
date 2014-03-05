@@ -105,13 +105,22 @@ class Loader(object):
         id = xml.attrib.get('id', None)
 
         # TYPE: cast value to correct type
-        type = xml.attrib.get('type', 'str').lower()
-        if type == 'service':
+        _type = xml.attrib.get('type', 'str').lower()
+        if _type == 'service':
             value = self.container.ref(xml.attrib.get('id'))
+        elif _type == 'tuple':
+            a = []
+            for element in _children_iterator(xml, allowed=('service', 'value', 'reference', )):
+                _retval = getattr(self, 'parse_{0}'.format(element.tag))(resource, element)
+                if type(_retval) == list:
+                    a += _retval
+                else:
+                    raise ValueError('Invalid')
+            value = tuple(a)
         else:
             value = unicode(xml.text) if xml.text else u''
             value = re.sub('%([a-z.-]+)%', lambda m: self.container.get(service_path_join(resource.namespace, m.group(1))), value)
-            value = ARGUMENT_TYPES[type](value)
+            value = ARGUMENT_TYPES[_type](value)
 
         # ID: set in container if provided
         if id:
@@ -126,18 +135,19 @@ class Loader(object):
     def parse_call(self, resource, xml):
         if not 'attr' in xml.attrib:
             raise ValueError('No target given for reference.')
-        xml.attrib.get('attr')
+        attr = xml.attrib.get('attr')
 
         a, k = [], {}
         for element in _children_iterator(xml, allowed=('service', 'value', 'reference', )):
             _retval = getattr(self, 'parse_{0}'.format(element.tag))(resource, element)
-            if element.tag != 'call':
-                if type(_retval) == list:
-                    a += _retval
-                elif type(_retval) == dict:
-                    k.update(_retval)
-                else:
-                    raise ValueError('Invalid')
+            if type(_retval) == list:
+                a += _retval
+            elif type(_retval) == dict:
+                k.update(_retval)
+            else:
+                raise ValueError('Invalid')
+
+        return attr, a, k
 
     def parse_service(self, resource, xml):
         # ID
@@ -156,7 +166,7 @@ class Loader(object):
             raise ValueError('No factory defined for service "{0}".'.format(hid))
 
         # Children, if value returned use as factory injections
-        a, k = [], {}
+        a, k, calls = [], {}, []
         for element in _children_iterator(xml, allowed=('service', 'value', 'reference', 'call',)):
             _retval = getattr(self, 'parse_{0}'.format(element.tag))(resource, element)
             if element.tag != 'call':
@@ -166,8 +176,12 @@ class Loader(object):
                     k.update(_retval)
                 else:
                     raise ValueError('Invalid')
+            else:
+                calls.append(_retval)
 
         service = Definition(factory, *a, **k)
+        for call in calls:
+            service.call(call[0], *call[1], **call[2])
 
         # ID: set in container if provided
         if id:
