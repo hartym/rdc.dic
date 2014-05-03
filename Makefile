@@ -1,6 +1,6 @@
 PYTHON=$(shell which python)
 PIP=$(shell which pip)
-.PHONY: clean doc remote_doc test develop
+.PHONY: install install-dev doc remote_doc clean test travis-build
 
 install:
 	$(PIP) install .
@@ -9,7 +9,7 @@ install-dev:
 	$(PYTHON) setup.py develop
 	$(PIP) install -r requirements-dev.txt
 
-doc: clean install-dev
+doc: install-dev
 	(cd doc; make html)
 
 remote_doc:
@@ -19,6 +19,10 @@ clean:
 	find . -name \*.pyc | xargs rm -f
 	(cd doc; rm -rf _build/*)
 
-test: clean install-dev
+test: install-dev
 	$(PIP) install -r requirements-dev.txt
 	nosetests -q --with-doctest --with-coverage --cover-package=rdc.dic
+
+travis-build:
+	make clean doc
+	make clean test
