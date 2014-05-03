@@ -67,6 +67,7 @@ class Definition(object):
             except AttributeError:
                 print '{0} has no {1} attribute.'.format(entry, _attr)
                 raise
+
             return entry(*args, **kwargs)
 
         factory.__name__ = self._factory

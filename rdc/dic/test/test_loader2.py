@@ -7,20 +7,6 @@ from rdc.dic.loader.xml import XmlLoader
 from rdc.dic.test import TestCase
 
 FILESYSTEM = DictImpl({
-    '/simple.xml': textwrap.dedent('''
-        <container>
-            <value type="int">42</value>
-            <value type="str">foo</value>
-            <value key="company" type="str">Acme Corp.</value>
-        </container>
-    '''),
-    '/simple2.xml': textwrap.dedent('''
-        <container>
-            <int>42</int>
-            <str>foo</str>
-            <str key="company">Acme Corp.</str>
-        </container>
-    '''),
     '/tuple.xml': textwrap.dedent('''
         <container>
             <tuple>
@@ -71,7 +57,17 @@ FILESYSTEM = DictImpl({
             </service>
             <reference for="lazyint" />
         </container>
-    ''')
+    '''),
+    '/ref.xml': textwrap.dedent('''
+        <container>
+            <str id="root">/tmp</str>
+            <str id="filename">foo/bar</str>
+            <service id="path" factory="os.path:join">
+                <reference for="root" />
+                <reference for="filename" />
+            </service>
+        </container>
+    '''),
 })
 
 
@@ -101,6 +97,11 @@ class Loader2TestCase(TestCase):
         l, d, s = loader.load('intref.xml')
         self.assertIs(dereference(l[0]), 42)
         self.assertIs(dereference(l[1]), 42)
+
+    def test_ref(self):
+        loader = self.__build_loader()
+        l, d, s = loader.load('ref.xml')
+        self.assertEqual(self.container.get('path'), '/tmp/foo/bar')
 
     def __build_loader(self):
         locator = ResourceLocator('/', filesystem=FILESYSTEM)

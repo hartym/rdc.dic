@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
+
 import sys
-from rdc.dic.definition import Definition
-
 import re
-
 from collections import OrderedDict
 from lxml import etree
-
-def SERVICE(factory):
-    pass
+from rdc.dic.definition import Definition
 
 T_SERVICE = type('service', (object, ), {})
 T_REFERENCE = type('reference', (object, ), {})
@@ -43,7 +39,7 @@ COMPOSED_TYPES = {
     'list': _list,
 }
 
-def print_xml(node):
+def print_xml(node): # pragma: no cover
     import textwrap
     print(node)
     print(textwrap.dedent(etree.tostring(node, pretty_print=True)))
