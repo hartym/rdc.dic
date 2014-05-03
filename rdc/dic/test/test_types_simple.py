@@ -31,6 +31,6 @@ class SimpleTypesTestCase(TestCase):
 
     def test_float(self):
         t = SIMPLE_TYPES['float']
-        self.assertIs(t('3.14159'), 3.14159)
-        self.assertIs(t(3.14159), 3.14159)
+        self.assertAlmostEqual(t('3.14159'), 3.14159)
+        self.assertAlmostEqual(t(3.14159), 3.14159)
         self.assertRaises(ValueError, t, 'foobar')
