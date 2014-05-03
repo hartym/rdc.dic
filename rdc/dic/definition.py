@@ -1,10 +1,13 @@
+
 import itertools
 import re
-from webapp2 import cached_property
+
+from rdc.dic.util import cached_property
 
 CALL = object()
 SETATTR = object()
 module_regex = re.compile(r"\w+(\.\w+)*$").match
+
 
 def dereference( x):
     # While x is a reference, resolve it.
@@ -21,6 +24,7 @@ def dereference( x):
     # TODO: how to be more generic ?
 
     return x
+
 
 class Definition(object):
     __reference__ = True

@@ -1,2 +1,1 @@
 lxml
-webapp2 # only required for cached_property, maybe we'll have our version in the future.
