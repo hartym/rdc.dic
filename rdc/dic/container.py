@@ -3,12 +3,15 @@
 # Author: Romain Dorgueil <romain@dorgueil.net>
 # Copyright: © 2011-2013 SARL Romain Dorgueil Conseil
 #
+import itertools
 
 from rdc.dic.definition import Definition
 from rdc.dic.logging import LoggerAware
 from rdc.dic.reference import reference, is_reference
 from rdc.dic.scope import Scope, CachedScope
 
+def join(*args):
+    return '.'.join(filter(None, args))
 
 class Container(LoggerAware):
     configure = None
@@ -59,12 +62,18 @@ class Container(LoggerAware):
         self.refs[name].repr = repr(value)
         return self.refs[name]
 
-    def set_parameters(self, parameters):
-        return [self.set_parameter(name, value) for name, value in parameters.iteritems()]
-
-    def get_parameters(self, *args, **kwargs):
+    def set_parameters(self, *args, **kwargs):
         namespace = kwargs.pop('namespace', None)
-        return ['.'.join(filter(None, [namespace, arg])) for arg in args]
+        return [
+            self.set_parameter(join(namespace, k), v)
+            for k, v in itertools.chain(
+                *map(lambda i: i.iteritems(), args + (kwargs, ))
+            )
+        ]
+
+    def get_parameter_names(self, *args, **kwargs):
+        namespace = kwargs.pop('namespace', None)
+        return [join(namespace, arg) for arg in args]
 
     def ref(self, name):
         if not name in self.refs:

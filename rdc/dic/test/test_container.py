@@ -1,7 +1,7 @@
 from rdc.dic import Container
 from rdc.dic.test import TestCase
 
-class ConfigTestCase(TestCase):
+class ContainerTestCase(TestCase):
     def setUp(self):
         self.container = Container()
 
@@ -15,9 +15,5 @@ class ConfigTestCase(TestCase):
             'foo': 42,
             'bar': 43
         })
-        self.assertListEqual(self.container.get_parameters('foo', 'bar'), [
-            42, 43
-        ])
-        self.assertListEqual(self.container.get_parameters('bar', 'foo'), [
-            43, 42
-        ])
+        self.assertEqual(self.container.get('foo'), 42)
+        self.assertEqual(self.container.get('bar'), 43)
