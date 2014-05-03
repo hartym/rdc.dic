@@ -1,3 +1,4 @@
+import __builtin__
 import itertools
 import re
 
@@ -40,8 +41,8 @@ class Definition(object):
             return self._factory
 
         # is factory in builtins?
-        if hasattr(__builtins__, self._factory):
-            factory = getattr(__builtins__, self._factory)
+        if hasattr(__builtin__, self._factory):
+            factory = getattr(__builtin__, self._factory)
             if callable(factory):
                 return factory
 

@@ -1,4 +1,5 @@
 PYTHON=$(shell which python)
+PIP=$(shell which pip)
 .PHONY: clean doc remote_doc test develop
 
 develop:
@@ -15,4 +16,5 @@ clean:
 	(cd doc; rm -rf _build/*)
 
 test:
+	$(PIP) install -r requirements-dev.txt
 	nosetests --with-doctest --with-coverage
