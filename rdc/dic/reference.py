@@ -15,6 +15,10 @@
 # limitations under the License.
 
 from functools import partial
+from rdc.dic.definition import dereference
+
+def is_reference(o):
+    return hasattr(o, '__reference__') and o.__reference__
 
 class _partial(partial):
     __reference__ = True
@@ -35,4 +39,9 @@ def reference(mixed, *args, **kwargs):
         return value
     _reference.__reference__ = True
     return _reference
+
+def tuple_reference(seq=()):
+    _tuple = lambda: dereference(seq)
+    _tuple.__reference__ = True
+    return _tuple
 

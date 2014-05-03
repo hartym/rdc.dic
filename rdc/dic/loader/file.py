@@ -1,8 +1,7 @@
-import io, os
 from rdc.dic.definition import Definition
 from lxml import etree
-from rdc.dic import Container, debug_container
 import sys
+from rdc.dic.reference import tuple_reference
 import re
 
 def service_path_join(*args):
@@ -50,30 +49,6 @@ ARGUMENT_TYPES = {
     'float': float,
 }
 
-class FileResource(object):
-    def __init__(self, filename, mode, namespace=None):
-        self.filename = filename
-        self.dirname = os.path.dirname(filename)
-        self.mode = mode
-        self.file = None
-        self.namespace = namespace
-
-    def __enter__(self):
-        self.file = io.open(self.filename, mode=self.mode, encoding='utf-8')
-        return self.file
-
-    def __exit__(self, *exc):
-        self.file.close()
-        self.file = None
-        return False
-
-class Locator(object):
-    def __init__(self, path):
-        self.path = path
-
-    def get_reader(self, name, namespace=None, path=None):
-        filename = os.path.join(*filter(None, (self.path, path, name, )))
-        return FileResource(filename, mode='rU', namespace=namespace)
 
 class Loader(object):
     def __init__(self, container, locator):
@@ -84,7 +59,7 @@ class Loader(object):
         resource = self.locator.get_reader(name, namespace=namespace, path=path)
         with resource as io_stream:
             xml = etree.parse(io_stream)
-            self.parse(resource, xml.getroot())
+            return self.parse(resource, xml.getroot())
 
     def parse_import(self, resource, xml):
         assert xml.text is None
@@ -116,7 +91,8 @@ class Loader(object):
                     a += _retval
                 else:
                     raise ValueError('Invalid')
-            value = tuple(a)
+            value = tuple_reference(a)
+            print value, value.__reference__
         else:
             value = unicode(xml.text) if xml.text else u''
             value = re.sub('%([a-z.-]+)%', lambda m: self.container.get(service_path_join(resource.namespace, m.group(1))), value)
@@ -210,7 +186,11 @@ class Loader(object):
         return
 
     def parse(self, resource, xml):
+        result = []
         for element in _children_iterator(xml, allowed=('service', 'value', 'import', )):
-            getattr(self, 'parse_{0}'.format(element.tag))(resource, element)
+            result.append(
+                getattr(self, 'parse_{0}'.format(element.tag))(resource, element)
+            )
+        return result
 
 

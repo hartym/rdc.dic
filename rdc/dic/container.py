@@ -3,11 +3,14 @@
 # Author: Romain Dorgueil <romain@dorgueil.net>
 # Copyright: © 2011-2013 SARL Romain Dorgueil Conseil
 #
+
 from rdc.dic.definition import Definition
-from rdc.dic.reference import reference
+from rdc.dic.logging import LoggerAware
+from rdc.dic.reference import reference, is_reference
 from rdc.dic.scope import Scope, CachedScope
 
-class Container(object):
+
+class Container(LoggerAware):
     configure = None
 
     def __init__(self, *args, **kwargs):
@@ -20,15 +23,13 @@ class Container(object):
             'container': CachedScope(),
             }
 
-        self.set_parameters(kwargs)
-
         if callable(self.configure):
-            self.configure(self, *args)
-
-    def load_module(self, name, *args, **kwargs):
-        __import__(name, fromlist=['Container']).Container.configure(self, *args, **kwargs)
+            self.configure(self, *args, **kwargs)
+        elif len(args) or len(kwargs):
+            raise TypeError('Container of type {0} takes no arguments ({1} given)'.format(type(self), len(args) + len(kwargs)))
 
     def define(self, name, definition, scope='container', allow_override=False):
+        self.logger.debug('define({name!r}, {definition!r}, {scope!r}, {allow_override!r})'.format(name=name, definition=definition, scope=scope, allow_override=allow_override))
         if name and not allow_override and name in self.refs:
             raise KeyError('Service container already have a definition for "{0}".'.format(name))
 
@@ -47,6 +48,8 @@ class Container(object):
         return decorator
 
     def set_parameter(self, name, value, allow_override=False):
+        self.logger.debug('set_parameter({name!r}, {value!r}, {allow_override!r})'.format(name=name, value=value, allow_override=allow_override))
+
         if not allow_override and name in self.refs:
             raise KeyError('Service container already have a definition for "{0}".'.format(name))
 
@@ -69,4 +72,12 @@ class Container(object):
 
     def get(self, name):
         return self.ref(name)()
+
+    def set(self, id, value):
+        if is_reference(value):
+            return self.define(id, value)
+        return self.set_parameter(id, value)
+
+    def __len__(self):
+        return len(self.refs)
 

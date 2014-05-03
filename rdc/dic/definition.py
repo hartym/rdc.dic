@@ -1,4 +1,3 @@
-from functools import partial
 import itertools
 import re
 from webapp2 import cached_property
@@ -34,6 +33,11 @@ class Definition(object):
 
     @cached_property
     def factory(self):
+        if not callable(self._factory) and hasattr(__builtins__, self._factory):
+            factory_candidate = getattr(__builtins__, self._factory)
+            if callable(factory_candidate):
+                self._factory = factory_candidate
+
         if not callable(self._factory):
             try:
                 _module, _attr = self._factory.split(':', 1)
@@ -85,4 +89,8 @@ class Definition(object):
         return o
 
     def __repr__(self):
-        return '<Definition factory="{0}" *{1} **{2}>'.format(self._factory, self._args, self._kwargs)
+        arguments = itertools.chain(
+            map(repr, self._args),
+            ('{0}={1!r}'.format(*i) for i in self._kwargs.iteritems())
+        )
+        return '*{0}({1})'.format(self._factory, ', '.join(arguments))
