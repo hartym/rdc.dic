@@ -5,10 +5,10 @@ import os
 import StringIO
 
 class IResource(object):
-    def __enter__(self):
+    def __enter__(self): # pragma: no cover
         raise NotImplementedError('Abstract.')
 
-    def __exit__(self, *exc):
+    def __exit__(self, *exc): # pragma: no cover
         raise NotImplementedError('Abstract.')
 
 class FilesystemResource(object):

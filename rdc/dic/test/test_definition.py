@@ -1,8 +1,8 @@
-from copy import copy
-from unittest import TestCase
 
+from copy import copy
 from rdc.dic.definition import Definition, dereference
 from rdc.dic.reference import is_reference
+from rdc.dic.test import TestCase
 
 
 class DefinitionTestCase(TestCase):
@@ -87,7 +87,7 @@ class DefinitionTestCase(TestCase):
             )
 
     def test_tuple_identity(self):
-        self.skipTest('not implemented yet')
+        self.skipTest('test_definition: DefinitionTestCase.test_tuple_identity is not implemented yet.')
         source, result = self._test_iterable(
             tuple, (
                 ('foo', 'bar', ),

@@ -14,13 +14,13 @@ T_SERVICE = type('service', (object, ), {})
 T_REFERENCE = type('reference', (object, ), {})
 
 def _bool(v):
-    v = v.lower()
+    v = str(v).lower()
     if v in ('t', '1', 'true', 'on', 'yes', ):
         return True
     elif v in ('f', '0', 'false', 'off', 'no', ):
         return False
     else:
-        raise TypeError('Invalid boolean value {0}.'.format(repr(v)))
+        raise ValueError('invalid literal for _bool(): {0!r}.'.format(v))
 
 def _tuple(*p, **k):
     if len(k):
@@ -127,23 +127,7 @@ class XmlLoader(Loader):
     def parse_node(self, resource, node):
         _id = node.attrib.get('id', None)
         _hid = id or '(anonymous)'
-
-        # retrieve type
-        tag = node.tag.lower()
-        if 'value' == tag:
-            _type = node.attrib.get('type', '').lower()
-            if '' == _type:
-                # default to string
-                _type = 'str'
-        else:
-            _type = tag
-
-        if _type == T_SERVICE.__name__:
-            _type = T_SERVICE
-        elif _type == T_REFERENCE.__name__:
-            _type = T_REFERENCE
-
-        _children = (child for child in node)
+        _type = self.__get_type_from_node(node)
 
         # build
         if _type in SIMPLE_TYPES:
@@ -153,7 +137,7 @@ class XmlLoader(Loader):
         elif _type is T_SERVICE:
             _value = self.__as_service(node)
         elif _type is T_REFERENCE:
-            _value = None
+            _value = self.__as_reference(node)
         else:
             raise TypeError('Unknown type {0}.'.format(_type))
 
@@ -164,7 +148,7 @@ class XmlLoader(Loader):
         else:
             _pv, _kv, _sv = [_value], None, None
 
-        # if "id" attribute is provided, setup in container
+        # if "id" attribute is provided, set definition in container
         if _id:
             try:
                 self.container.set(_id, _value)
@@ -205,5 +189,34 @@ class XmlLoader(Loader):
             definition.add(st, *sp, **sk)
 
         return definition
+
+    def __as_reference(self, node):
+        text = _xml_text(node, strip=True)
+        if text and len(text):
+            raise ValueError('References cannot have a text value (got {0!r}).'.format(text))
+
+        ref_for = node.attrib.get('for', None)
+        if not ref_for:
+            raise ValueError('References must have a "for" attribute.')
+
+        return self.container.ref(ref_for)
+
+    def __get_type_from_node(self, node):
+        '''
+        Node type retrieval.
+
+        '''
+        tag = node.tag.lower()
+        if 'value' == tag:
+            t = node.attrib.get('type', 'str').lower()
+        else:
+            t = tag
+
+        if t == T_SERVICE.__name__:
+            t = T_SERVICE
+        elif t == T_REFERENCE.__name__:
+            t = T_REFERENCE
+
+        return t
 
 

@@ -1,7 +1,7 @@
-from unittest import TestCase
 import os
 from rdc.dic.config.filesystem import DictImpl
 from rdc.dic.config.locator import ResourceLocator
+from rdc.dic.test import TestCase
 
 FILESYSTEM = DictImpl({
     '/not-config.xml': 'wrong',
@@ -9,7 +9,6 @@ FILESYSTEM = DictImpl({
     '/bar/config.xml': 'bar',
     '/config.xml': 'root',
 })
-
 
 class ConfigTestCase(TestCase):
     def _build_locator(self, paths=None):

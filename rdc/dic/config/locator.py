@@ -6,7 +6,7 @@ from rdc.dic.config.filesystem import FilesystemImpl
 class IResourceLocator(object):
     filesystem = FilesystemImpl
 
-    def locate(self, name, current_path = None, first = True):
+    def locate(self, name, current_path = None, first = True): # pragma: no cover
         raise NotImplementedError('Abstract.')
 
 

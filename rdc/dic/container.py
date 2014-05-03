@@ -29,7 +29,7 @@ class Container(LoggerAware):
             raise TypeError('Container of type {0} takes no arguments ({1} given)'.format(type(self), len(args) + len(kwargs)))
 
     def define(self, name, definition, scope='container', allow_override=False):
-        self.logger.debug('define({name!r}, {definition!r}, {scope!r}, {allow_override!r})'.format(name=name, definition=definition, scope=scope, allow_override=allow_override))
+        self.logger.debug('[container#{id}] {cls}.define({name!r}, {definition!r}, {scope!r}, {allow_override!r})'.format(cls=type(self).__name__, id=id(self), **locals()))
         if name and not allow_override and name in self.refs:
             raise KeyError('Service container already have a definition for "{0}".'.format(name))
 
@@ -43,12 +43,13 @@ class Container(LoggerAware):
         return ref
 
     def definition(self, prefix, *args, **kwargs):
+        self.logger.debug('[container#{id}] {cls}.definition({prefix!r}, *{args!r}, **{kwargs!r})'.format(cls=type(self).__name__, id=id(self), **locals()))
         def decorator(factory):
             return self.define('.'.join(filter(None, [prefix, factory.__name__])), Definition(factory, *args, **kwargs))
         return decorator
 
     def set_parameter(self, name, value, allow_override=False):
-        self.logger.debug('set_parameter({name!r}, {value!r}, {allow_override!r})'.format(name=name, value=value, allow_override=allow_override))
+        self.logger.debug('[container#{id}] {cls}.set_parameter({name!r}, {value!r}, {allow_override!r})'.format(cls=type(self).__name__, id=id(self), **locals()))
 
         if not allow_override and name in self.refs:
             raise KeyError('Service container already have a definition for "{0}".'.format(name))

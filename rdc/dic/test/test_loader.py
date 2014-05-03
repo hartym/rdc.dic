@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from unittest import TestCase
 from lxml import etree
 from rdc.dic.loader.xml import XmlLoader
+from rdc.dic.test import TestCase
 
 
 class LoaderTestCase(TestCase):

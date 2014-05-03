@@ -17,4 +17,4 @@ clean:
 
 test:
 	$(PIP) install -r requirements-dev.txt
-	nosetests --with-doctest --with-coverage
+	nosetests -q --with-doctest --with-coverage
