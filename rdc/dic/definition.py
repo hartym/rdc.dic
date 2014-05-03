@@ -1,4 +1,3 @@
-
 import itertools
 import re
 
@@ -9,7 +8,7 @@ SETATTR = object()
 module_regex = re.compile(r"\w+(\.\w+)*$").match
 
 
-def dereference( x):
+def dereference(x):
     # While x is a reference, resolve it.
     while callable(x) and hasattr(x, '__reference__') and x.__reference__:
         x = x()
@@ -37,38 +36,41 @@ class Definition(object):
 
     @cached_property
     def factory(self):
-        if not callable(self._factory) and hasattr(__builtins__, self._factory):
-            factory_candidate = getattr(__builtins__, self._factory)
-            if callable(factory_candidate):
-                self._factory = factory_candidate
+        if callable(self._factory):
+            return self._factory
 
-        if not callable(self._factory):
+        # is factory in builtins?
+        if hasattr(__builtins__, self._factory):
+            factory = getattr(__builtins__, self._factory)
+            if callable(factory):
+                return factory
+
+        try:
+            _module, _attr = self._factory.split(':', 1)
+        except ValueError as e:
+            raise ValueError('The factory path {0} is invalid. Expected format: {1}.'.format(repr(self._factory), repr(
+                'path.to.module:factory_name')))
+
+        if not module_regex(_module):
+            raise ValueError('Invalid module name {0}'.format(_module))
+
+        def factory(*args, **kwargs):
             try:
-                _module, _attr = self._factory.split(':', 1)
-            except ValueError as e:
-                raise ValueError('The factory path {0} is invalid. Expected format: {1}.'.format(repr(self._factory), repr('path.to.module:factory_name')))
+                entry = __import__(_module, globals(), globals(), ['__name__'])
+            except:
+                print 'Could not import {0}'.format(_module)
+                raise
 
-            if not module_regex(_module):
-                raise ValueError('Invalid module name {0}'.format(_module))
+            try:
+                entry = getattr(entry, _attr)
+            except AttributeError:
+                print '{0} has no {1} attribute.'.format(entry, _attr)
+                raise
+            return entry(*args, **kwargs)
 
-            def factory(*args, **kwargs):
-                try:
-                    entry = __import__(_module, globals(), globals(), ['__name__'])
-                except:
-                    print 'Could not import {0}'.format(_module)
-                    raise
+        factory.__name__ = self._factory
 
-                try:
-                    entry = getattr(entry, _attr)
-                except AttributeError:
-                    print '{0} has no {1} attribute.'.format(entry, _attr)
-                    raise
-                return entry(*args, **kwargs)
-
-            factory.__name__ = self._factory
-            self._factory = factory
-
-        return self._factory
+        return factory
 
     def call(self, attr, *args, **kwargs):
         self._setup.append((CALL, (attr, args, kwargs, ), ))
@@ -93,8 +95,8 @@ class Definition(object):
         return o
 
     def __repr__(self):
-        arguments = itertools.chain(
+
+        return '*{0}({1})'.format(self._factory, ', '.join(itertools.chain(
             map(repr, self._args),
             ('{0}={1!r}'.format(*i) for i in self._kwargs.iteritems())
-        )
-        return '*{0}({1})'.format(self._factory, ', '.join(arguments))
+        )))
