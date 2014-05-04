@@ -43,5 +43,7 @@ def reference(mixed, *args, **kwargs):
 def tuple_reference(seq=()):
     _tuple = lambda: dereference(seq)
     _tuple.__reference__ = True
+    _tuple.__repr__ = lambda self: '*' + repr(seq)
+
     return _tuple
 

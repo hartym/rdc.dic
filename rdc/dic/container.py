@@ -7,7 +7,7 @@ import itertools
 
 from rdc.dic.definition import Definition
 from rdc.dic.logging import LoggerAware
-from rdc.dic.reference import reference, is_reference
+from rdc.dic.reference import reference, is_reference, tuple_reference
 from rdc.dic.scope import Scope, CachedScope
 
 def join(*args):
@@ -83,10 +83,16 @@ class Container(LoggerAware):
     def get(self, name):
         return self.ref(name)()
 
-    def set(self, id, value):
+    def set(self, key, value, lazy=False):
+        self.logger.debug('[container#{id}] {cls}.set({key!r}, {value!r})'.format(cls=type(self).__name__, id=id(self), **locals()))
         if is_reference(value):
-            return self.define(id, value)
-        return self.set_parameter(id, value)
+            return self.define(key, value)
+        elif lazy:
+            if isinstance(value, tuple):
+                return self.define(key, tuple_reference(value))
+            else:
+                raise NotImplementedError('Lazy logic not implemented for {0}.'.format(type(value).__name__))
+        return self.set_parameter(key, value)
 
     def __len__(self):
         return len(self.refs)

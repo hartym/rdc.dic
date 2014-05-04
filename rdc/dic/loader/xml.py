@@ -92,6 +92,8 @@ class Loader(object):
 class XmlLoader(Loader):
     NS = 'http://rdc.li/schema/rdc.dic/container'
 
+    FLAG_LAZY = 0x01
+
     def load(self, name, current_path=None):
         file = self.locator.locate(name, current_path=current_path)[0]
 
@@ -100,16 +102,14 @@ class XmlLoader(Loader):
             return self.parse(resource, node.getroot())
 
     def parse(self, resource, node, allowed=None):
-        result = list(), OrderedDict(), list()
+        result = [list(), OrderedDict(), list(), 0]
 
         allowed_children = ('service', 'value', 'import', 'int', 'str', 'reference', 'tuple' )
         if allowed:
             allowed_children += allowed
 
         for child_node in _children_iterator(node, allowed=allowed_children):
-            parser = self.parse_node
-
-            positional_arguments, keyword_arguments, special = parser(resource, child_node)
+            positional_arguments, keyword_arguments, special, flags = self.parse_node(resource, child_node)
 
             if positional_arguments:
                 result[0].extend(positional_arguments)
@@ -117,6 +117,8 @@ class XmlLoader(Loader):
                 result[1].update(keyword_arguments)
             if special:
                 result[2].extend(special)
+
+            result[3] |= flags
 
         return result
 
@@ -127,13 +129,13 @@ class XmlLoader(Loader):
 
         # build
         if _type in SIMPLE_TYPES:
-            _value = self.__as_simple(SIMPLE_TYPES[_type], node)
+            _value, _flags = self.__as_simple(SIMPLE_TYPES[_type], node)
         elif _type in COMPOSED_TYPES:
-            _value = self.__as_composed(COMPOSED_TYPES[_type], node)
+            _value, _flags = self.__as_composed(COMPOSED_TYPES[_type], node)
         elif _type is T_SERVICE:
-            _value = self.__as_service(node)
+            _value, _flags = self.__as_service(node)
         elif _type is T_REFERENCE:
-            _value = self.__as_reference(node)
+            _value, _flags = self.__as_reference(node)
         else:
             raise TypeError('Unknown type {0}.'.format(_type))
 
@@ -147,18 +149,18 @@ class XmlLoader(Loader):
         # if "id" attribute is provided, set definition in container
         if _id:
             try:
-                self.container.set(_id, _value)
+                self.container.set(_id, _value, lazy=bool(_flags & XmlLoader.FLAG_LAZY))
             except Exception as e:
                 et, ex, tb = sys.exc_info()
                 raise type(e), '{1} (while defining service "{0}").'.format(_hid, e.message), tb
 
-        return _pv, _kv, _sv
+        return _pv, _kv, _sv, _flags
 
     def __as_simple(self, typeof, node):
         value = _xml_text(node, strip=True)
         if value is not None:
             value = re.sub('%([a-z.-]+)%', lambda m: self.container.get(m.group(1)), value)
-            return typeof(value)
+            return typeof(value), 0
         return None
 
     def __as_composed(self, typeof, node):
@@ -166,8 +168,8 @@ class XmlLoader(Loader):
         if text and len(text):
             raise ValueError('Composed types cannot have a text value (got {0!r}).'.format(text))
 
-        p, k, s = self.parse(None, node)
-        return typeof(*p, **k)
+        positional_arguments, keyword_arguments, special, flags = self.parse(None, node)
+        return typeof(*positional_arguments, **keyword_arguments), flags
 
     def __as_service(self, node):
         text = _xml_text(node, strip=True)
@@ -178,13 +180,13 @@ class XmlLoader(Loader):
         if not factory_path:
             raise ValueError('Services must have a "factory" attribute.')
 
-        p, k, s = self.parse(None, node)
-        definition = Definition(factory_path, *p, **k)
+        positional_arguments, keyword_arguments, special, flags = self.parse(None, node)
+        definition = Definition(factory_path, *positional_arguments, **keyword_arguments)
 
-        for st, sp, sk in s:
-            definition.add(st, *sp, **sk)
+        for special_type, special_positional_arguments, special_keyword_arguments in special:
+            definition.add(special_type, *special_positional_arguments, **special_keyword_arguments)
 
-        return definition
+        return definition, flags | XmlLoader.FLAG_LAZY
 
     def __as_reference(self, node):
         text = _xml_text(node, strip=True)
@@ -195,7 +197,7 @@ class XmlLoader(Loader):
         if not ref_for:
             raise ValueError('References must have a "for" attribute.')
 
-        return self.container.ref(ref_for)
+        return self.container.ref(ref_for), XmlLoader.FLAG_LAZY
 
     def __get_type_from_node(self, node):
         '''
