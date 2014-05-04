@@ -25,7 +25,7 @@ class LoaderTestCase(TestCase):
             ):
                 xml = xml.format(attrs=(keyed and 'key="MyKey"' or ''))
                 node = etree.fromstring(xml)
-                pv, kv, sv = loader.parse_node(None, node)
+                pv, kv, sv, fl = loader.parse_node(None, node)
 
                 if keyed:
                     self.assertIsNone(pv)
@@ -48,7 +48,7 @@ class LoaderTestCase(TestCase):
             ):
                 xml = xml.format(attrs=(keyed and 'key="MyKey"' or ''))
                 node = etree.fromstring(xml)
-                pv, kv, sv = loader.parse_node(None, node)
+                pv, kv, sv, fl = loader.parse_node(None, node)
 
                 if keyed:
                     self.assertIsNone(pv)
@@ -74,7 +74,7 @@ class LoaderTestCase(TestCase):
             ):
                 xml = xml.format(attrs=(keyed and 'key="MyKey"' or ''))
                 node = etree.fromstring(xml)
-                pv, kv, sv = loader.parse_node(None, node)
+                pv, kv, sv, fl = loader.parse_node(None, node)
 
                 if keyed:
                     self.assertIsNone(pv)
@@ -123,7 +123,7 @@ class LoaderTestCase(TestCase):
                 xml = xml.format(attrs=(keyed and 'key="MyKey"' or ''), type=iter_type.__name__)
                 expected = iter_type(expected)
                 node = etree.fromstring(xml)
-                pv, kv, sv = loader.parse_node(None, node)
+                pv, kv, sv, fl = loader.parse_node(None, node)
                 if keyed:
                     self.assertEqual(len(kv), 1)
                     self.assertIsNone(pv)
