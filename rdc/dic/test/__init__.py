@@ -13,3 +13,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from unittest import TestCase as BaseTestCase
+from rdc.dic.util import cached_property
+
+
+class TestCase(BaseTestCase):
+    def run(self, result=None):
+        self.logger.debug('[test] '+type(self).__name__+'.'+self._testMethodName+'() ...')
+        super(TestCase, self).run(result)
+
+    @cached_property
+    def logger(self):
+        from rdc.dic.logging import logger
+        return logger

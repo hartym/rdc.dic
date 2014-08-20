@@ -1,7 +1,8 @@
-from functools import partial
+import __builtin__
 import itertools
 import re
-from webapp2 import cached_property
+
+from rdc.dic.util import cached_property
 
 CALL = object()
 SETATTR = object()
@@ -36,42 +37,52 @@ class Definition(object):
 
     @cached_property
     def factory(self):
-        if not callable(self._factory):
+        if callable(self._factory):
+            return self._factory
+
+        # is factory in builtins?
+        if hasattr(__builtin__, self._factory):
+            factory = getattr(__builtin__, self._factory)
+            if callable(factory):
+                return factory
+
+        try:
+            _module, _attr = self._factory.split(':', 1)
+        except ValueError as e:
+            raise ValueError('The factory path {0} is invalid. Expected format: {1}.'.format(repr(self._factory), repr(
+                'path.to.module:factory_name')))
+
+        if not module_regex(_module):
+            raise ValueError('Invalid module name {0}'.format(_module))
+
+        def factory(*args, **kwargs):
             try:
-                _module, _attr = self._factory.split(':', 1)
-            except ValueError as e:
-                raise ValueError('The factory path {0} is invalid. Expected format: {1}.'.format(repr(self._factory),
-                                                                                                 repr(
-                                                                                                     'path.to.module:factory_name')))
+                entry = __import__(_module, globals(), globals(), ['__name__'])
+            except:
+                print 'Could not import {0}'.format(_module)
+                raise
 
-            if not module_regex(_module):
-                raise ValueError('Invalid module name {0}'.format(_module))
+            try:
+                entry = getattr(entry, _attr)
+            except AttributeError:
+                print '{0} has no {1} attribute.'.format(entry, _attr)
+                raise
 
-            def factory(*args, **kwargs):
-                try:
-                    entry = __import__(_module, globals(), globals(), ['__name__'])
-                except:
-                    print 'Could not import {0}'.format(_module)
-                    raise
+            return entry(*args, **kwargs)
 
-                try:
-                    entry = getattr(entry, _attr)
-                except AttributeError:
-                    print '{0} has no {1} attribute.'.format(entry, _attr)
-                    raise
-                return entry(*args, **kwargs)
+        factory.__name__ = self._factory
 
-            factory.__name__ = self._factory
-            self._factory = factory
-
-        return self._factory
+        return factory
 
     @cached_property
     def factory_short_name(self):
         name = self.factory.__name__
-        p, a = name.split(':')
-        p = '.'.join(map(lambda i: i[0], p.split('.')))
-        return '.'.join((p, a))
+        try:
+            p, a = name.split(':')
+            p = '.'.join(map(lambda i: i[0], p.split('.')))
+            return '.'.join((p, a))
+        except ValueError:
+            return repr(self.factory)
 
     def call(self, attr, *args, **kwargs):
         self._setup.append((CALL, (attr, args, kwargs, ), ))
@@ -106,3 +117,4 @@ def _repr_args(args, kwargs):
             ', '.join(map(lambda i: '{0}={1}'.format(*i), kwargs.iteritems())),
         ])
     )
+

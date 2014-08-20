@@ -1,9 +1,10 @@
 from test.test_functools import TestPartial, capture
-from rdc.dic.reference import Reference
+from rdc.dic.definition import dereference
+from rdc.dic.reference import _partial
 
 class ReferenceTestCase(TestPartial):
-    thetype = Reference
+    thetype = _partial
 
     def test_reference(self):
         p = self.thetype(capture)
-        self.assertEqual(self.thetype.dereference(p), ((), {}))
+        self.assertEqual(dereference(self.thetype(p)), ((), {}))
