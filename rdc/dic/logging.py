@@ -5,7 +5,6 @@ from __future__ import absolute_import
 import logging
 
 logger = logging.getLogger('rdc.dic')
-logger.setLevel(logging.DEBUG)
 _handler = logging.StreamHandler()
 _formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s %(message)s')
 _handler.setFormatter(_formatter)
