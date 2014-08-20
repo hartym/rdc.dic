@@ -7,7 +7,8 @@ CALL = object()
 SETATTR = object()
 module_regex = re.compile(r"\w+(\.\w+)*$").match
 
-def dereference( x):
+
+def dereference(x):
     # While x is a reference, resolve it.
     while callable(x) and hasattr(x, '__reference__') and x.__reference__:
         x = x()
@@ -22,6 +23,7 @@ def dereference( x):
     # TODO: how to be more generic ?
 
     return x
+
 
 class Definition(object):
     __reference__ = True
@@ -38,7 +40,9 @@ class Definition(object):
             try:
                 _module, _attr = self._factory.split(':', 1)
             except ValueError as e:
-                raise ValueError('The factory path {0} is invalid. Expected format: {1}.'.format(repr(self._factory), repr('path.to.module:factory_name')))
+                raise ValueError('The factory path {0} is invalid. Expected format: {1}.'.format(repr(self._factory),
+                                                                                                 repr(
+                                                                                                     'path.to.module:factory_name')))
 
             if not module_regex(_module):
                 raise ValueError('Invalid module name {0}'.format(_module))
@@ -61,6 +65,13 @@ class Definition(object):
             self._factory = factory
 
         return self._factory
+
+    @cached_property
+    def factory_short_name(self):
+        name = self.factory.__name__
+        p, a = name.split(':')
+        p = '.'.join(map(lambda i: i[0], p.split('.')))
+        return '.'.join((p, a))
 
     def call(self, attr, *args, **kwargs):
         self._setup.append((CALL, (attr, args, kwargs, ), ))
@@ -85,4 +96,13 @@ class Definition(object):
         return o
 
     def __repr__(self):
-        return '<Definition factory="{0}" *{1} **{2}>'.format(self._factory, self._args, self._kwargs)
+        return '{0}({1})'.format(self.factory_short_name, _repr_args(self._args, self._kwargs))
+
+
+def _repr_args(args, kwargs):
+    return ', '.join(
+        filter(None, [
+            ', '.join(map(repr, args)),
+            ', '.join(map(lambda i: '{0}={1}'.format(*i), kwargs.iteritems())),
+        ])
+    )
