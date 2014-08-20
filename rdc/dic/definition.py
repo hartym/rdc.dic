@@ -76,13 +76,17 @@ class Definition(object):
 
     @cached_property
     def factory_short_name(self):
-        name = self.factory.__name__
+        def shorten(module):
+            if module.startswith('__'):
+                return None
+            return '.'.join(map(lambda i: i[0], module.split('.')))
+
+        name, module = self.factory.__name__, self.factory.__module__
         try:
-            p, a = name.split(':')
-            p = '.'.join(map(lambda i: i[0], p.split('.')))
-            return '.'.join((p, a))
+            module, name = name.split(':')
         except ValueError:
-            return repr(self.factory)
+            pass
+        return '.'.join(filter(None, (shorten(module), name, )))
 
     def call(self, attr, *args, **kwargs):
         self._setup.append((CALL, (attr, args, kwargs, ), ))
