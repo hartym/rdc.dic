@@ -3,6 +3,7 @@
 # Author: Romain Dorgueil <romain@dorgueil.net>
 # Copyright: © 2011-2013 SARL Romain Dorgueil Conseil
 #
+import functools
 import itertools
 
 from rdc.dic.definition import Definition
@@ -12,6 +13,8 @@ from rdc.dic.scope import Scope, CachedScope
 
 def join(*args):
     return '.'.join(filter(None, args))
+
+
 
 class Container(LoggerAware):
     configure = None
@@ -93,6 +96,22 @@ class Container(LoggerAware):
             else:
                 raise NotImplementedError('Lazy logic not implemented for {0}.'.format(type(value).__name__))
         return self.set_parameter(key, value)
+
+    def inject(self, **inject_map):
+        def inject_decorator(wrapped):
+            @functools.wraps(wrapped)
+            def _wrapped(*args, **kwargs):
+                for k, v in inject_map.iteritems():
+                    # todo : move at decorator level to raise at import instead of runtime
+                    if k in kwargs:
+                        raise KeyError('Duplicate parameter for {0}'.format(k))
+                    if callable(v):
+                        kwargs[k] = v(self)
+                    else:
+                        kwargs[k] = self.get(v)
+                return wrapped(*args, **kwargs)
+            return _wrapped
+        return inject_decorator
 
     def __len__(self):
         return len(self.refs)
