@@ -9,7 +9,8 @@ import itertools
 from rdc.dic.definition import Definition
 from rdc.dic.logging import LoggerAware
 from rdc.dic.reference import reference, is_reference, tuple_reference
-from rdc.dic.scope import Scope, CachedScope
+from rdc.dic.scope import Scope, CachedScope, ThreadScope
+
 
 def join(*args):
     return '.'.join(filter(None, args))
@@ -27,6 +28,7 @@ class Container(LoggerAware):
         self.scopes = {
             'prototype': Scope(),
             'container': CachedScope(),
+            'thread': ThreadScope(),
             }
 
         if callable(self.configure):
@@ -34,7 +36,8 @@ class Container(LoggerAware):
         elif len(args) or len(kwargs):
             raise TypeError('Container of type {0} takes no arguments ({1} given)'.format(type(self), len(args) + len(kwargs)))
 
-    def define(self, name, definition, scope='container', allow_override=False):
+    def define(self, name, definition, scope=None, allow_override=False):
+        scope = scope or 'container'
         self.logger.debug('[container#{id}] {cls}.define({name!r}, {definition!r}, {scope!r}, {allow_override!r})'.format(cls=type(self).__name__, id=id(self), **locals()))
         if name and not allow_override and name in self.refs:
             raise KeyError('Service container already have a definition for "{0}".'.format(name))
@@ -85,6 +88,12 @@ class Container(LoggerAware):
 
     def get(self, name):
         return self.ref(name)()
+
+    def scope_of(self, name):
+        try:
+            return self.ref(name)._scope
+        except AttributeError as e:
+            return None
 
     def set(self, key, value, lazy=False):
         self.logger.debug('[container#{id}] {cls}.set({key!r}, {value!r})'.format(cls=type(self).__name__, id=id(self), **locals()))

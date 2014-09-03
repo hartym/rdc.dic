@@ -19,6 +19,6 @@ from rdc.dic.container import Container
 
 def debug_container(container):
     for name in sorted(container.refs.keys()):
-        yield name, container.ref(name)
+        yield name, container.ref(name), container.scope_of(name)
 
 __all__ = [Container, debug_container]

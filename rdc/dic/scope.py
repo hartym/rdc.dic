@@ -13,10 +13,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from abc import abstractmethod, ABCMeta
-from rdc.dic.error import AbstractError
+
 
 import re
+import threading
+
+from abc import abstractmethod, ABCMeta
+
+from rdc.dic.error import AbstractError
 from rdc.dic.reference import reference
 
 
@@ -88,3 +92,29 @@ class CachedScope(Scope):
         if not name in self.services:
             self.services[name] = self.build(name)
         return self.services[name]
+
+
+class NamespacedScope(CachedScope):
+    """
+    A thread that store service instances by "namespace", if provided.
+    """
+
+    @property
+    def current_namespace(self):
+        return None
+
+    def get(self, name):
+        ns_name = '::'.join(filter(None, (self.current_namespace, name, )))
+        if not ns_name in self.services:
+            self.services[ns_name] = self.build(name)
+        return self.services[ns_name]
+
+
+class ThreadScope(NamespacedScope):
+    @property
+    def current_namespace(self):
+        return str(threading.current_thread().name)
+
+
+
+
