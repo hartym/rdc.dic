@@ -13,15 +13,43 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from abc import abstractmethod, ABCMeta
+from rdc.dic.error import AbstractError
 
 import re
 from rdc.dic.reference import reference
 
+
 MODULE = re.compile(r"\w+(\.\w+)*$").match
 
-class Scope(object):
+
+class IScope:
     """
-    Service scope that returns  a new instance for a given service each time get(service_name) is called.
+    Interface for dependency injection scopes.
+    """
+
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get(self, name):
+        """Get an instance by service name. Whether or not a new instance should be created is left as an implementation
+        choice, and different scopes may have different behavior about this."""
+        raise AbstractError(self.get)
+
+    @abstractmethod
+    def build(self, name):
+        """Builds an instance for service named `name`. This should not be called by user, as `get()` will call
+        `build()` if the current scope implementation instance requires the creation of a new instance."""
+        raise AbstractError(self.build)
+
+    @abstractmethod
+    def ref(self, name):
+        """Returns a "reference" to a named `get()` call."""
+        raise AbstractError(self.ref)
+
+class Scope(IScope, object):
+    """
+    Dependency injection scope that returns a new instance for a given service each time get(service_name) is called.
     """
 
     def __init__(self, container=None):
@@ -37,8 +65,10 @@ class Scope(object):
         """Create an instance."""
         return self.definitions[name]()
 
+    get = build
+
     def ref(self, name, repr=None):
-        ref = reference(self.build, name)
+        ref = reference(self.get, name)
         if repr is not None:
             ref.repr = repr
         return ref
@@ -46,7 +76,7 @@ class Scope(object):
 
 class CachedScope(Scope):
     """
-    Service scope that returns the same instance for a given service each time get(service_name) is called.
+    Dependency injection scope that returns the same instance for a given service each time get(service_name) is called.
     """
 
     def __init__(self, container=None):
