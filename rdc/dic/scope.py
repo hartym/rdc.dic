@@ -99,16 +99,23 @@ class NamespacedScope(CachedScope):
     A thread that store service instances by "namespace", if provided.
     """
 
+    def __init__(self, container=None):
+        super(NamespacedScope, self).__init__(container)
+        self ._current_namespace = None
+
     @property
     def current_namespace(self):
-        return None
+        return self._current_namespace
+
+    @current_namespace.setter
+    def current_namespace(self, value):
+        self._current_namespace = value
 
     def get(self, name):
         ns_name = '::'.join(filter(None, (self.current_namespace, name, )))
         if not ns_name in self.services:
             self.services[ns_name] = self.build(name)
         return self.services[ns_name]
-
 
 class ThreadScope(NamespacedScope):
     @property
