@@ -31,13 +31,16 @@ class ContainerMiddleware:
         if not 'request' in self.container.scopes:
             self.container.scopes['request'] = NamespacedScope()
 
+    def namespace(self, request):
+        return str(id(request))
+
     def process_request(self, request):
         request.container = self.container
-        self.container.scopes['request'].current_namespace = id(request)
+        self.container.scopes['request'].enter(self.namespace(request))
         return None
 
     def process_response(self, request, response):
-        self.container.scopes['request'].current_namespace = None
+        self.container.scopes['request'].leave(self.namespace(request))
         request.container = None
         return response
 

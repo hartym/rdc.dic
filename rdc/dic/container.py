@@ -9,7 +9,7 @@ import itertools
 from rdc.dic.definition import Definition
 from rdc.dic.logging import LoggerAware
 from rdc.dic.reference import reference, is_reference, tuple_reference
-from rdc.dic.scope import Scope, CachedScope, ThreadScope
+from rdc.dic.scope import Scope, CachedScope, ThreadLocalScope
 
 
 def join(*args):
@@ -28,7 +28,7 @@ class Container(LoggerAware):
         self.scopes = {
             'prototype': Scope(),
             'container': CachedScope(),
-            'thread': ThreadScope(),
+            'thread': ThreadLocalScope(),
             }
 
         if callable(self.configure):
@@ -82,10 +82,12 @@ class Container(LoggerAware):
         return [join(namespace, arg) for arg in args]
 
     def ref(self, name):
-        if not name in self.refs:
+        if not name in self:
             raise KeyError('Undefined service "{0}" requested.'.format(name))
         return self.refs[name]
 
+    def __contains__(self, item):
+        return item in self.refs
     def get(self, name):
         return self.ref(name)()
 

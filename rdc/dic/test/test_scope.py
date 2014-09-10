@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from rdc.dic.scope import CachedScope, Scope, ThreadScope
+from rdc.dic.scope import CachedScope, Scope, ThreadLocalScope
 from rdc.dic.test import TestCase
 from rdc.dic.definition import Definition
 
@@ -46,7 +46,7 @@ class ScopeTestCase(TestCase):
         self.assertIsNot(scope.get('bar'), scope.get('foo'))
 
     def test_thread_scope(self):
-        scope = self.build(ScopeType=ThreadScope)
+        scope = self.build(ScopeType=ThreadLocalScope)
 
         self.assertIs(scope.get('foo'), scope.get('foo'))
         self.assertIsNot(scope.get('foo'), scope.get('bar'))

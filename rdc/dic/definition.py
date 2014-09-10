@@ -31,6 +31,8 @@ class Definition(object):
 
     def __init__(self, factory, *args, **kwargs):
         self._factory = factory
+        self._name = None
+        self._module = None
         self._args = list(args) if args else []
         self._kwargs = dict(kwargs) if kwargs else {}
         self._setup = []
@@ -70,9 +72,22 @@ class Definition(object):
 
             return entry(*args, **kwargs)
 
-        factory.__name__ = self._factory
+        factory.__name__ = str(_attr)
+        factory.__module__ = str(_module)
 
         return factory
+
+    @cached_property
+    def __name__(self):
+        if not self._name:
+            self._name = self.factory.__name__
+        return self._name
+
+    @cached_property
+    def __module__(self):
+        if not self._module:
+            self._module = self.factory.__module__
+        return self._module
 
     @cached_property
     def factory_short_name(self):
@@ -81,12 +96,7 @@ class Definition(object):
                 return None
             return '.'.join(map(lambda i: i[0], module.split('.')))
 
-        name, module = self.factory.__name__, self.factory.__module__
-        try:
-            module, name = name.split(':')
-        except ValueError:
-            pass
-        return '.'.join(filter(None, (shorten(module), name, )))
+        return '.'.join(filter(None, (shorten(self.__module__), self.__name__, )))
 
     def call(self, attr, *args, **kwargs):
         self._setup.append((CALL, (attr, args, kwargs, ), ))

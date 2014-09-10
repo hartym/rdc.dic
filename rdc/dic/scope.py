@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2012-2014 Romain Dorgueil
 #
@@ -51,6 +50,17 @@ class IScope:
         """Returns a "reference" to a named `get()` call."""
         raise AbstractError(self.ref)
 
+    @abstractmethod
+    def definitions(self):
+        """Iterator on definitions."""
+        raise AbstractError(self.ref)
+
+    @abstractmethod
+    def services(self):
+        """Iterator on services."""
+        raise AbstractError(self.ref)
+
+
 class Scope(IScope, object):
     """
     Dependency injection scope that returns a new instance for a given service each time get(service_name) is called.
@@ -58,16 +68,16 @@ class Scope(IScope, object):
 
     def __init__(self, container=None):
         self.container = container
-        self.definitions = {}
+        self._definitions = {}
 
     def define(self, name, definition):
         """Create definition and return a callable getter."""
-        self.definitions[name] = definition
+        self._definitions[name] = definition
         return self.ref(name, repr=definition)
 
     def build(self, name):
         """Create an instance."""
-        return self.definitions[name]()
+        return self._definitions[name]()
 
     get = build
 
@@ -77,6 +87,15 @@ class Scope(IScope, object):
             ref.repr = repr
         return ref
 
+    def definitions(self):
+        for name, definition in sorted(self._definitions.iteritems()):
+            yield name, definition
+
+    def services(self):
+        """No service instance for prototype level scope"""
+        if 0:
+            yield
+
 
 class CachedScope(Scope):
     """
@@ -85,13 +104,17 @@ class CachedScope(Scope):
 
     def __init__(self, container=None):
         super(CachedScope, self).__init__(container)
-        self.services = {}
+        self._services = {}
 
     def get(self, name):
         """Get in scope or build."""
-        if not name in self.services:
-            self.services[name] = self.build(name)
-        return self.services[name]
+        if not name in self._services:
+            self._services[name] = self.build(name)
+        return self._services[name]
+
+    def services(self):
+        for id, service in sorted(self._services.iteritems()):
+            yield id, service
 
 
 class NamespacedScope(CachedScope):
@@ -101,23 +124,39 @@ class NamespacedScope(CachedScope):
 
     def __init__(self, container=None):
         super(NamespacedScope, self).__init__(container)
-        self ._current_namespace = None
+        self._current_namespace = None
 
     @property
     def current_namespace(self):
-        return self._current_namespace
+        return str(self._current_namespace)
 
     @current_namespace.setter
     def current_namespace(self, value):
         self._current_namespace = value
 
     def get(self, name):
-        ns_name = '::'.join(filter(None, (self.current_namespace, name, )))
-        if not ns_name in self.services:
-            self.services[ns_name] = self.build(name)
-        return self.services[ns_name]
+        ns = self.current_namespace
+        if not ns in self._services:
+            self._services[ns] = {}
+        if not name in self._services[ns]:
+            self._services[ns][name] = self.build(name)
+        return self._services[ns][name]
 
-class ThreadScope(NamespacedScope):
+    def services(self):
+        for ns, ns_services in sorted(self._services.iteritems()):
+            for id, service in sorted(ns_services.iteritems()):
+                yield (ns, id, ), service
+
+    def enter(self, namespace):
+        self._current_namespace = str(namespace)
+        self._services[namespace] = {}
+
+    def leave(self, namespace):
+        del self._services[namespace]
+        if namespace == self.current_namespace:
+            self._current_namespace = None
+
+class ThreadLocalScope(NamespacedScope):
     @property
     def current_namespace(self):
         return str(threading.current_thread().name)
