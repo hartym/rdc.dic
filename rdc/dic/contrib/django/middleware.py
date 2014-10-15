@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from django.conf import settings
-from django.utils.module_loading import import_string
 from rdc.dic import Container
 from rdc.dic.scope import NamespacedScope
-
 
 class ContainerMiddleware:
     """
@@ -12,6 +9,10 @@ class ContainerMiddleware:
     """
 
     def __init__(self):
+        # Import it in constructor instead of module so it won't fail at import even if django is not installed.
+        from django.conf import settings
+        from django.utils.module_loading import import_string
+
         try:
             c = settings.DI_CONTAINER
         except AttributeError as e:
