@@ -104,7 +104,7 @@ class XmlLoader(Loader):
     def parse(self, resource, node, allowed=None):
         result = [list(), OrderedDict(), list(), 0]
 
-        allowed_children = ('service', 'value', 'import', 'int', 'str', 'reference', 'tuple' )
+        allowed_children = ('service', 'value', 'import', 'int', 'str', 'reference', 'list', 'tuple' )
         if allowed:
             allowed_children += allowed
 
