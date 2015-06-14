@@ -3,8 +3,12 @@
 from rdc.dic import Container
 from rdc.dic.scope import NamespacedScope
 
-class ContainerMiddleware:
+class ContainerMiddleware(object):
     """
+    Attach a service container to django's request object, with a namespace that allows to scope service instances
+    to a given request.
+
+    Set "DI_CONTAINER" in your project's settings.py to a custom class path to customize the container factory.
 
     """
 
@@ -41,8 +45,10 @@ class ContainerMiddleware:
         return None
 
     def process_response(self, request, response):
-        self.container.scopes['request'].leave(self.namespace(request))
-        request.container = None
+        if hasattr(request, 'container'):
+            self.container.scopes['request'].leave(self.namespace(request))
+            delattr(request, 'container')
+
         return response
 
 
