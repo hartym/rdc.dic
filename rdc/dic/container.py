@@ -86,8 +86,6 @@ class Container(LoggerAware):
             raise KeyError('Undefined service "{0}" requested.'.format(name))
         return self.refs[name]
 
-    def __contains__(self, item):
-        return item in self.refs
     def get(self, name):
         return self.ref(name)()
 
@@ -126,4 +124,8 @@ class Container(LoggerAware):
 
     def __len__(self):
         return len(self.refs)
+
+    def __contains__(self, item):
+        return item in self.refs
+
 

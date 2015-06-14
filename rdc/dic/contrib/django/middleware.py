@@ -8,7 +8,7 @@ class ContainerMiddleware(object):
     Attach a service container to django's request object, with a namespace that allows to scope service instances
     to a given request.
 
-    Set "DI_CONTAINER" in your project's settings.py to a custom class path to customize the container factory.
+    Set "SERVICE_CONTAINER_CLASS" in your project's settings.py to a custom class path to customize the container factory.
 
     """
 
@@ -18,8 +18,8 @@ class ContainerMiddleware(object):
         from django.utils.module_loading import import_string
 
         try:
-            c = settings.DI_CONTAINER
-        except AttributeError as e:
+            c = settings.SERVICE_CONTAINER_CLASS
+        except (AttributeError, NameError) as e:
             c = 'rdc.dic.Container'
 
         # Do I have to import it myself ?
