@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import six
 from rdc.dic import Container
 from rdc.dic.scope import NamespacedScope
 
@@ -18,21 +18,28 @@ class ContainerMiddleware(object):
         from django.utils.module_loading import import_string
 
         try:
-            c = settings.SERVICE_CONTAINER_CLASS
+            container = settings.SERVICE_CONTAINER
         except (AttributeError, NameError) as e:
-            c = 'rdc.dic.Container'
+            try:
+                container_class = settings.SERVICE_CONTAINER_CLASS
+            except (AttributeError, NameError) as e:
+                container_class = 'rdc.dic.Container'
 
-        # Do I have to import it myself ?
-        if isinstance(c, basestring):
-            c = import_string(c)
+            # If we got a string, import it.
+            if isinstance(container_class, six.string_types):
+                container_class = import_string(container_class)
 
-        # Not a container ? Maybe a container factory.
-        if not isinstance(c, Container):
-            c = c()
+            container = container_class()
 
-        assert isinstance(c, Container), 'I tried my best to find your container. Your turn.'
+        # If we got a string, import it.
+        if isinstance(container, six.string_types):
+            container = import_string(container)
 
-        self.container = c
+        assert isinstance(container, Container), ('I tried my best to find your container but I got stuck. Either set '
+                                                  'SERVICE_CONTAINER_CLASS to a container factory or SERVICE_CONTAINER '
+                                                  'to a container instance. Thanks, bye.')
+
+        self.container = container
         if not 'request' in self.container.scopes:
             self.container.scopes['request'] = NamespacedScope()
 
