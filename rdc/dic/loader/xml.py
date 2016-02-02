@@ -8,6 +8,7 @@ from rdc.dic.definition import Definition
 
 T_SERVICE = type('service', (object, ), {})
 T_REFERENCE = type('reference', (object, ), {})
+T_INCLUDE = type('include', (object, ), {})
 
 def _bool(v):
     v = str(v).lower()
@@ -93,6 +94,7 @@ class XmlLoader(Loader):
     NS = 'http://rdc.li/schema/rdc.dic/container'
 
     FLAG_LAZY = 0x01
+    FLAG_OVERRIDE = 0x02
 
     def load(self, name, current_path=None):
         file = self.locator.locate(name, current_path=current_path)[0]
@@ -104,7 +106,7 @@ class XmlLoader(Loader):
     def parse(self, resource, node, allowed=None):
         result = [list(), OrderedDict(), list(), 0]
 
-        allowed_children = ('service', 'value', 'import', 'int', 'str', 'reference', 'list', 'tuple' )
+        allowed_children = ('service', 'value', 'import', 'int', 'str', 'reference', 'list', 'tuple', 'include', )
         if allowed:
             allowed_children += allowed
 
@@ -132,6 +134,8 @@ class XmlLoader(Loader):
             _value, _flags = self.__as_simple(SIMPLE_TYPES[_type], node)
         elif _type in COMPOSED_TYPES:
             _value, _flags = self.__as_composed(COMPOSED_TYPES[_type], node)
+        elif _type is T_INCLUDE:
+            return self.load(_xml_text(node, strip=True))
         elif _type is T_SERVICE:
             _value, _flags = self.__as_service(node)
         elif _type is T_REFERENCE:
@@ -149,7 +153,17 @@ class XmlLoader(Loader):
         # if "id" attribute is provided, set definition in container
         if _id:
             try:
-                self.container.set(_id, _value, lazy=bool(_flags & XmlLoader.FLAG_LAZY))
+                try:
+                    self.container.set(
+                            _id,
+                            _value,
+                            lazy=bool(_flags & XmlLoader.FLAG_LAZY),
+                            allow_override=bool(_flags & XmlLoader.FLAG_OVERRIDE),
+                    )
+                except KeyError as e:
+                    # ignore second definition of a given key.
+                    # this should only be "passed" if some "default" flag is set, to avoid accidents.
+                    pass
             except Exception as e:
                 et, ex, tb = sys.exc_info()
                 raise type(e), '{1} (while defining service "{0}").'.format(_hid, e.message), tb
@@ -199,6 +213,7 @@ class XmlLoader(Loader):
 
         return self.container.ref(ref_for), XmlLoader.FLAG_LAZY
 
+
     def __get_type_from_node(self, node):
         '''
         Node type retrieval.
@@ -214,6 +229,8 @@ class XmlLoader(Loader):
             t = T_SERVICE
         elif t == T_REFERENCE.__name__:
             t = T_REFERENCE
+        elif t == T_INCLUDE.__name__:
+            t = T_INCLUDE
 
         return t
 

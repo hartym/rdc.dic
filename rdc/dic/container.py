@@ -11,11 +11,8 @@ from rdc.dic.logging import LoggerAware
 from rdc.dic.reference import reference, is_reference, tuple_reference
 from rdc.dic.scope import Scope, CachedScope, ThreadLocalScope
 
-
 def join(*args):
     return '.'.join(filter(None, args))
-
-
 
 class Container(LoggerAware):
     configure = None
@@ -95,7 +92,7 @@ class Container(LoggerAware):
         except AttributeError as e:
             return None
 
-    def set(self, key, value, lazy=False):
+    def set(self, key, value, lazy=False, allow_override=False):
         self.logger.debug('[container#{id}] {cls}.set({key!r}, {value!r})'.format(cls=type(self).__name__, id=id(self), **locals()))
         if is_reference(value):
             return self.define(key, value)
@@ -104,7 +101,7 @@ class Container(LoggerAware):
                 return self.define(key, tuple_reference(value))
             else:
                 raise NotImplementedError('Lazy logic not implemented for {0}.'.format(type(value).__name__))
-        return self.set_parameter(key, value)
+        return self.set_parameter(key, value, allow_override)
 
     def inject(self, **inject_map):
         def inject_decorator(wrapped):
