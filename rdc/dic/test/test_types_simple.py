@@ -20,8 +20,8 @@ class SimpleTypesTestCase(TestCase):
 
     def test_str(self):
         t = SIMPLE_TYPES['str']
-        self.assertEqual(t('foobar'), u'foobar')
-        self.assertEqual(t(3.14159), u'3.14159')
+        self.assertEqual(t('foobar'), 'foobar')
+        self.assertEqual(t(3.14159), '3.14159')
 
     def test_int(self):
         t = SIMPLE_TYPES['int']

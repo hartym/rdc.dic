@@ -17,9 +17,9 @@ class MyThread(Thread):
         self.result = None
 
     def run(self):
-        print(self.name)
-        print(current_thread())
-        print(current_thread().ident)
+        print((self.name))
+        print((current_thread()))
+        print((current_thread().ident))
         self.result = self.scope.get('foo')
 
 class ScopeTestCase(TestCase):

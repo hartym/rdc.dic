@@ -1,4 +1,18 @@
 # -*- coding: utf-8 -*-
+#
+# Copyright 2012-2016 Romain Dorgueil
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import sys
 import re
@@ -6,31 +20,35 @@ from collections import OrderedDict
 from lxml import etree
 from rdc.dic.definition import Definition
 
-T_SERVICE = type('service', (object, ), {})
-T_REFERENCE = type('reference', (object, ), {})
+T_SERVICE = type('service', (object,), {})
+T_REFERENCE = type('reference', (object,), {})
+
 
 def _bool(v):
     v = str(v).lower()
-    if v in ('t', '1', 'true', 'on', 'yes', ):
+    if v in ('t', '1', 'true', 'on', 'yes',):
         return True
-    elif v in ('f', '0', 'false', 'off', 'no', ):
+    elif v in ('f', '0', 'false', 'off', 'no',):
         return False
     else:
         raise ValueError('invalid literal for _bool(): {0!r}.'.format(v))
+
 
 def _tuple(*p, **k):
     if len(k):
         raise ValueError('Cannot create tuple using keyword arguments.')
     return tuple(p)
 
+
 def _list(*p, **k):
     if len(k):
         raise ValueError('Cannot create tuple using keyword arguments.')
     return list(p)
 
+
 SIMPLE_TYPES = {
     'bool': _bool,
-    'str': unicode,
+    'str': str,
     'int': int,
     'float': float,
 }
@@ -39,26 +57,29 @@ COMPOSED_TYPES = {
     'list': _list,
 }
 
-def print_xml(node): # pragma: no cover
+
+def print_xml(node):  # pragma: no cover
     import textwrap
     print(node)
-    print(textwrap.dedent(etree.tostring(node, pretty_print=True)))
+    print((textwrap.dedent(etree.tostring(node, pretty_print=True))))
+
 
 def _xml_text(node, strip=False, separator=None):
     text = [node.text]
     for child in node:
         if child.tail is not None:
             text.append(child.tail)
-    text = filter(None, text)
+    text = [_f for _f in text if _f]
     if strip:
         # strip
-        text = map(lambda s: s.strip(), text)
+        text = [s.strip() for s in text]
         # remove empty strings
-        text = filter(lambda s: len(s), text)
+        text = [s for s in text if len(s)]
         separator = separator or ' '
     if len(text):
-        return unicode((separator or '').join(text))
+        return str((separator or '').join(text))
     return None
+
 
 def _children_iterator(node, allowed=()):
     for child in node:
@@ -104,7 +125,7 @@ class XmlLoader(Loader):
     def parse(self, resource, node, allowed=None):
         result = [list(), OrderedDict(), list(), 0]
 
-        allowed_children = ('service', 'value', 'import', 'int', 'str', 'reference', 'list', 'tuple' )
+        allowed_children = ('service', 'value', 'import', 'int', 'str', 'reference', 'list', 'tuple')
         if allowed:
             allowed_children += allowed
 
@@ -152,7 +173,7 @@ class XmlLoader(Loader):
                 self.container.set(_id, _value, lazy=bool(_flags & XmlLoader.FLAG_LAZY))
             except Exception as e:
                 et, ex, tb = sys.exc_info()
-                raise type(e), '{1} (while defining service "{0}").'.format(_hid, e.message), tb
+                raise type(e)('{1} (while defining service "{0}").'.format(_hid, e.message)).with_traceback(tb)
 
         return _pv, _kv, _sv, _flags
 
@@ -216,5 +237,3 @@ class XmlLoader(Loader):
             t = T_REFERENCE
 
         return t
-
-

@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 #
-# Copyright 2012-2014 Romain Dorgueil
+# Copyright 2012-2016 Romain Dorgueil
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,25 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import re
 import threading
-
 from abc import abstractmethod, ABCMeta
 
 from rdc.dic.error import AbstractError
 from rdc.dic.reference import reference
 
-
 MODULE = re.compile(r"\w+(\.\w+)*$").match
 
 
-class IScope:
+class IScope(metaclass=ABCMeta):
     """
     Interface for dependency injection scopes.
     """
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def get(self, name):
@@ -88,7 +84,7 @@ class Scope(IScope, object):
         return ref
 
     def definitions(self):
-        for name, definition in sorted(self._definitions.iteritems()):
+        for name, definition in sorted(self._definitions.items()):
             yield name, definition
 
     def services(self):
@@ -113,7 +109,7 @@ class CachedScope(Scope):
         return self._services[name]
 
     def services(self):
-        for id, service in sorted(self._services.iteritems()):
+        for id, service in sorted(self._services.items()):
             yield id, service
 
 
@@ -143,8 +139,8 @@ class NamespacedScope(CachedScope):
         return self._services[ns][name]
 
     def services(self):
-        for ns, ns_services in sorted(self._services.iteritems()):
-            for id, service in sorted(ns_services.iteritems()):
+        for ns, ns_services in sorted(self._services.items()):
+            for id, service in sorted(ns_services.items()):
                 yield (ns, id, ), service
 
     def enter(self, namespace):

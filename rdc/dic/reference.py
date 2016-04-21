@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2012-2014 Romain Dorgueil
+# Copyright 2012-2016 Romain Dorgueil
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,22 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 from functools import partial
+
 from rdc.dic.definition import dereference
+
 
 def is_reference(o):
     return hasattr(o, '__reference__') and o.__reference__
+
 
 class _partial(partial):
     __reference__ = True
 
     def __repr__(self):
-        return unicode(self.repr) if hasattr(self, 'repr') else repr(self.func)
+        return str(self.repr) if hasattr(self, 'repr') else repr(self.func)
+
 
 def reference(mixed, *args, **kwargs):
     _repr = kwargs.pop('_repr', None)
 
-    if callable(mixed):
+    if isinstance(mixed, collections.Callable):
         p = _partial(mixed, *args, **kwargs)
         if _repr:
             p.repr = _repr
@@ -37,8 +42,10 @@ def reference(mixed, *args, **kwargs):
 
     def _reference(value=mixed):
         return value
+
     _reference.__reference__ = True
     return _reference
+
 
 def tuple_reference(seq=()):
     _tuple = lambda: dereference(seq)
@@ -46,4 +53,3 @@ def tuple_reference(seq=()):
     _tuple.__repr__ = lambda self: '*' + repr(seq)
 
     return _tuple
-

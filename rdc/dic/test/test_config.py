@@ -39,7 +39,7 @@ class ConfigTestCase(TestCase):
         l = self._build_locator(resolution_order)
         f = 'config.xml'
         r = l.locate(f, first=False)
-        expected = map(lambda x: os.path.join(x, f), resolution_order)
+        expected = [os.path.join(x, f) for x in resolution_order]
         self.assertListEqual(r, expected)
         r2 = l.locate(f)
         self.assertEqual(r[0], r2[0])

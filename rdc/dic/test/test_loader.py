@@ -29,22 +29,22 @@ class LoaderTestCase(TestCase):
 
                 if keyed:
                     self.assertIsNone(pv)
-                    self.assertDictEqual(kv, {u'MyKey': u'Eat at Joe'})
+                    self.assertDictEqual(kv, {'MyKey': 'Eat at Joe'})
                 else:
-                    self.assertListEqual(pv, [u'Eat at Joe'])
+                    self.assertListEqual(pv, ['Eat at Joe'])
                     self.assertIsNone(kv)
 
     def test_parse_unicode(self):
         loader = self.__build_loader()
         for keyed in (False, True):
             for xml, expected in (
-                    (u'<str {attrs}>Eat at Joe</str>', u'Eat at Joe', ),
-                    (u'''<str {attrs}>
+                    ('<str {attrs}>Eat at Joe</str>', 'Eat at Joe', ),
+                    ('''<str {attrs}>
                         Eat at Joe
-                    </str>''', u'Eat at Joe', ),
-                    (u'''<str {attrs}>
+                    </str>''', 'Eat at Joe', ),
+                    ('''<str {attrs}>
                         ก ข ฃ ค ฅ ฆ ง จ ฉ ช ซ ฌ ญ ฎ ฏ ฐ ฑ ฒ ณ ด ต ถ ท ธ น บ ป ผ ฝ พ ฟ ภ ม ย ร ฤ ล ฦ ว ศ ษ ส ห ฬ อ ฮ ฯ
-                    </str>''', u'ก ข ฃ ค ฅ ฆ ง จ ฉ ช ซ ฌ ญ ฎ ฏ ฐ ฑ ฒ ณ ด ต ถ ท ธ น บ ป ผ ฝ พ ฟ ภ ม ย ร ฤ ล ฦ ว ศ ษ ส ห ฬ อ ฮ ฯ', ),
+                    </str>''', 'ก ข ฃ ค ฅ ฆ ง จ ฉ ช ซ ฌ ญ ฎ ฏ ฐ ฑ ฒ ณ ด ต ถ ท ธ น บ ป ผ ฝ พ ฟ ภ ม ย ร ฤ ล ฦ ว ศ ษ ส ห ฬ อ ฮ ฯ', ),
             ):
                 xml = xml.format(attrs=(keyed and 'key="MyKey"' or ''))
                 node = etree.fromstring(xml)
@@ -52,7 +52,7 @@ class LoaderTestCase(TestCase):
 
                 if keyed:
                     self.assertIsNone(pv)
-                    self.assertDictEqual(kv, {u'MyKey': expected})
+                    self.assertDictEqual(kv, {'MyKey': expected})
                 else:
                     self.assertListEqual(pv, [expected])
                     self.assertIsNone(kv)
@@ -78,7 +78,7 @@ class LoaderTestCase(TestCase):
 
                 if keyed:
                     self.assertIsNone(pv)
-                    self.assertDictEqual(kv, {u'MyKey': 42})
+                    self.assertDictEqual(kv, {'MyKey': 42})
                 else:
                     self.assertListEqual(pv, [42])
                     self.assertIsNone(kv)
@@ -90,7 +90,7 @@ class LoaderTestCase(TestCase):
             ):
                 xml = xml.format(attrs=(keyed and 'key="MyKey"' or ''))
                 node = etree.fromstring(xml)
-                self.assertRaisesRegexp(ValueError, 'invalid literal', loader.parse_node, None, node)
+                self.assertRaisesRegex(ValueError, 'invalid literal', loader.parse_node, None, node)
 
     def test_parse_tuple(self):
         return self.__test_parse_iterable(tuple, TestCase.assertTupleEqual)

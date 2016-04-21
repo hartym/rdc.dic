@@ -1,8 +1,25 @@
-import __builtin__
+# -*- coding: utf-8 -*-
+#
+# Copyright 2012-2016 Romain Dorgueil
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import builtins
 import itertools
 import re
 
 from rdc.dic.util import cached_property
+import collections
 
 CALL = object()
 SETATTR = object()
@@ -11,7 +28,7 @@ module_regex = re.compile(r"\w+(\.\w+)*$").match
 
 def dereference(x):
     # While x is a reference, resolve it.
-    while callable(x) and hasattr(x, '__reference__') and x.__reference__:
+    while isinstance(x, collections.Callable) and hasattr(x, '__reference__') and x.__reference__:
         x = x()
 
     # If x is a list, dereference each items into a new list
@@ -39,13 +56,13 @@ class Definition(object):
 
     @cached_property
     def factory(self):
-        if callable(self._factory):
+        if isinstance(self._factory, collections.Callable):
             return self._factory
 
         # is factory in builtins?
-        if hasattr(__builtin__, self._factory):
-            factory = getattr(__builtin__, self._factory)
-            if callable(factory):
+        if hasattr(builtins, self._factory):
+            factory = getattr(builtins, self._factory)
+            if isinstance(factory, collections.Callable):
                 return factory
 
         try:
@@ -61,13 +78,13 @@ class Definition(object):
             try:
                 entry = __import__(_module, globals(), globals(), ['__name__'])
             except:
-                print 'Could not import {0}'.format(_module)
+                print('Could not import {0}'.format(_module))
                 raise
 
             try:
                 entry = getattr(entry, _attr)
             except AttributeError:
-                print '{0} has no {1} attribute.'.format(entry, _attr)
+                print('{0} has no {1} attribute.'.format(entry, _attr))
                 raise
 
             return entry(*args, **kwargs)
@@ -94,26 +111,26 @@ class Definition(object):
         def shorten(module):
             if module.startswith('__'):
                 return None
-            return '.'.join(map(lambda i: i[0], module.split('.')))
+            return '.'.join([i[0] for i in module.split('.')])
 
-        return '.'.join(filter(None, (shorten(self.__module__), self.__name__, )))
+        return '.'.join([_f for _f in (shorten(self.__module__), self.__name__,) if _f])
 
     def call(self, attr, *args, **kwargs):
-        self._setup.append((CALL, (attr, args, kwargs, ), ))
+        self._setup.append((CALL, (attr, args, kwargs,),))
 
     def setattr(self, attr, value):
-        self._setup.append((SETATTR, (attr, value, )))
+        self._setup.append((SETATTR, (attr, value,)))
 
     def __call__(self, *args, **kwargs):
-        a = map(dereference, self._args + list(args))
-        k = dict((_k, dereference(_v)) for _k, _v in itertools.chain(self._kwargs.iteritems(), kwargs.iteritems()))
+        a = list(map(dereference, self._args + list(args)))
+        k = dict((_k, dereference(_v)) for _k, _v in itertools.chain(iter(self._kwargs.items()), iter(kwargs.items())))
         o = dereference(self.factory)(*a, **k)
 
         for _type, _args in self._setup:
             if _type == CALL:
                 attr, args, kwargs = _args
-                args = map(dereference, args)
-                kwargs = dict((_k, dereference(_v)) for _k, _v in kwargs.iteritems())
+                args = list(map(dereference, args))
+                kwargs = dict((_k, dereference(_v)) for _k, _v in kwargs.items())
                 getattr(o, attr)(*args, **kwargs)
             else:
                 raise NotImplementedError('not implemented')
@@ -126,9 +143,8 @@ class Definition(object):
 
 def _repr_args(args, kwargs):
     return ', '.join(
-        filter(None, [
+        [_f for _f in [
             ', '.join(map(repr, args)),
-            ', '.join(map(lambda i: '{0}={1}'.format(*i), kwargs.iteritems())),
-        ])
+            ', '.join(['{0}={1}'.format(*i) for i in iter(kwargs.items())]),
+        ] if _f]
     )
-

@@ -14,7 +14,7 @@ class SimpleTypesTestCase(TestCase):
         self.assertEqual(repr(Definition(float, 3.14159)), 'float(3.14159)')
         self.assertEqual(repr(Definition(str, r'foo')), "str('foo')")
         self.assertEqual(repr(Definition(str, r"f'o'o")), "str(\"f'o'o\")")
-        self.assertEqual(repr(Definition(unicode, 'Ô')), "unicode('\\xc3\\x94')")
+        self.assertEqual(repr(Definition(str, 'Ô')), "unicode('\\xc3\\x94')")
 
     def test_class(self):
         self.assertEqual(repr(Definition(OhMyObj)), 'r.d.t.t.OhMyObj()')

@@ -29,8 +29,8 @@ class DefinitionTestCase(TestCase):
         self.assertIs(o, s)
 
     def test_unicode(self):
-        s = u'foobar'
-        d = Definition(unicode, s)
+        s = 'foobar'
+        d = Definition(str, s)
         self.assertIsDefinition(d)
 
         o = dereference(d)
