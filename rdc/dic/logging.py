@@ -14,8 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import logging
-from rdc.dic.container import Container
-from rdc.dic.inspect import debug_container
+import logging
 
-__all__ = [Container, debug_container]
+logger = logging.getLogger('rdc.dic')
+_handler = logging.StreamHandler()
+_formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s %(message)s')
+_handler.setFormatter(_formatter)
+logger.addHandler(_handler)
+
+LoggerAware = type('LoggerAware', (object,), {'logger': logger})
+
+__all__ = [logger, LoggerAware]

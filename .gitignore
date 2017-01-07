@@ -15,3 +15,7 @@
 
 # jetbrains
 *.iml
+=======
+
+# coverage
+/.coverage

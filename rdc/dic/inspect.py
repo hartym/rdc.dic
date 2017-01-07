@@ -14,8 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import logging
-from rdc.dic.container import Container
-from rdc.dic.inspect import debug_container
+def debug_container(container):
+    for name in sorted(container.refs.keys()):
+        yield name, container.ref(name), container.scope_of(name)
 
-__all__ = [Container, debug_container]
+
+class ContainerInspector(object):
+    def __init__(self, container):
+        super(ContainerInspector, self).__init__()
+        self.container = container
+
+    def __iter__(self):
+        for name in sorted(self.container.refs.keys()):
+            yield name, self.container.ref(name), self.container.scope_of(name)
+
+    def get_instances(self, name):
+        pass

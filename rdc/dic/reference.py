@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2012-2014 Romain Dorgueil
+# Copyright 2012-2016 Romain Dorgueil
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,31 +14,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 from functools import partial
 
+from rdc.dic.definition import dereference
 
-class Reference(partial):
-    def __init__(self, func, *args, **keywords):
-        self._repr = None
-        self._scope = None
-        super(Reference, self).__init__(func, *args, **keywords)
 
-    @classmethod
-    def dereference(cls, ref_or_val):
-        while isinstance(ref_or_val, Reference):
-            ref_or_val = ref_or_val()
-        return ref_or_val
+def is_reference(o):
+    return hasattr(o, '__reference__') and o.__reference__
+
+
+class _partial(partial):
+    __reference__ = True
 
     def __repr__(self):
-        if self._repr is not None:
-            r = self._repr
-        else:
-            r = super(Reference, self).__repr__()
-
-        if self._scope is not None:
-            return '{0} ({1})'.format(r, self._scope)
-        else:
-            return r
+        return str(self.repr) if hasattr(self, 'repr') else repr(self.func)
 
 
+def reference(mixed, *args, **kwargs):
+    _repr = kwargs.pop('_repr', None)
 
+    if isinstance(mixed, collections.Callable):
+        p = _partial(mixed, *args, **kwargs)
+        if _repr:
+            p.repr = _repr
+        return p
+
+    def _reference(value=mixed):
+        return value
+
+    _reference.__reference__ = True
+    return _reference
+
+
+def tuple_reference(seq=()):
+    _tuple = lambda: dereference(seq)
+    _tuple.__reference__ = True
+    _tuple.__repr__ = lambda self: '*' + repr(seq)
+
+    return _tuple

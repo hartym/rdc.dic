@@ -14,8 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import logging
-from rdc.dic.container import Container
-from rdc.dic.inspect import debug_container
+class AbstractError(NotImplementedError):
+    """Abstract error is a convenient error to declare a method as "being left as an exercise for the reader."""
 
-__all__ = [Container, debug_container]
+    def __init__(self, method):
+        super(AbstractError, self).__init__(
+            'Call to abstract method {class_name}.{method_name}(...): missing implementation.'.format(
+                class_name=type(method.__self__).__name__,
+                method_name=method.__name__,
+            ))
+

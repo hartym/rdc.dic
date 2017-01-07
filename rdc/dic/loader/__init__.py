@@ -13,9 +13,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from . import logging
-from rdc.dic.container import Container
-from rdc.dic.inspect import debug_container
-
-__all__ = [Container, debug_container]
