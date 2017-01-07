@@ -1,20 +1,10 @@
-# Python
+*.egg-info
+*.iml
 *.pyc
-/.py-env
-
-# PyCharm files
+/.cache
+/.coverage
 /.idea
-
-# setup.py related stuff
+/.py-env
 /build
 /dist
-*.egg-info
-
-# sphinx
-/doc/_build
-
-# jetbrains
-*.iml
-
-# coverage
-/.coverage
+/docs/_build

@@ -1,28 +1,57 @@
-PYTHON=$(shell which python)
-PIP=$(shell which pip)
-.PHONY: install install-dev doc remote_doc clean test travis-build
+# This file has been auto-generated.
+# All changes will be lost, see Projectfile.
+#
+# Updated at 2017-01-07 11:06:39.628331
 
-install:
-	$(PIP) install .
+PYTHON ?= $(shell which python)
+PYTHON_BASENAME ?= $(shell basename $(PYTHON))
+PYTHON_REQUIREMENTS_FILE ?= requirements.txt
+PYTHON_REQUIREMENTS_DEV_FILE ?= requirements-dev.txt
+QUICK ?= 
+VIRTUAL_ENV ?= .virtualenv-$(PYTHON_BASENAME)
+PIP ?= $(VIRTUAL_ENV)/bin/pip
+PYTEST ?= $(VIRTUAL_ENV)/bin/pytest
+PYTEST_OPTIONS ?= --capture=no --cov=rdc/dic --cov-report html
+SPHINX_OPTS ?= 
+SPHINX_BUILD ?= $(VIRTUAL_ENV)/bin/sphinx-build
+SPHINX_SOURCEDIR ?= docs
+SPHINX_BUILDDIR ?= $(SPHINX_SOURCEDIR)/_build
+YAPF ?= $(VIRTUAL_ENV)/bin/yapf
+YAPF_OPTIONS ?= -rip
 
-install-dev:
-	$(PYTHON) setup.py develop
-	$(PIP) install -r requirements-dev.txt
+.PHONY: $(SPHINX_SOURCEDIR) clean format install install-dev lint test
 
-doc: install-dev
-	(cd doc; make html)
+# Installs the local project dependencies.
+install: $(VIRTUAL_ENV)
+	if [ -z "$(QUICK)" ]; then \
+	    $(PIP) install -U pip wheel -r $(PYTHON_REQUIREMENTS_FILE) ; \
+	fi
 
-remote_doc:
-	curl -X POST http://readthedocs.org/build/rdcdic
+# Installs the local project dependencies, including development-only libraries.
+install-dev: $(VIRTUAL_ENV)
+	if [ -z "$(QUICK)" ]; then \
+	    $(PIP) install -U pip wheel -r $(PYTHON_REQUIREMENTS_DEV_FILE) ; \
+	fi
 
+# Cleans up the local mess.
 clean:
-	find . -name \*.pyc | xargs rm -f
-	(cd doc; rm -rf _build/*)
+	rm -rf build
+	rm -rf dist
+
+# Setup the local virtualenv, or use the one provided by the current environment.
+$(VIRTUAL_ENV):
+	virtualenv -p $(PYTHON) $(VIRTUAL_ENV)
+	$(PIP) install -U pip wheel
+	ln -fs $(VIRTUAL_ENV)/bin/activate activate-$(PYTHON_BASENAME)
+
+lint: install-dev
+	$(VIRTUAL_ENV)/bin/pylint --py3k rdc.dic -f html > pylint.html
 
 test: install-dev
-	$(PIP) install -r requirements-dev.txt
-	nosetests -q --with-doctest --with-coverage --cover-package=rdc.dic
+	$(PYTEST) $(PYTEST_OPTIONS) tests
 
-travis-build:
-	make clean doc
-	make clean test
+$(SPHINX_SOURCEDIR): install-dev
+	$(SPHINX_BUILD) -b html -D latex_paper_size=a4 $(SPHINX_OPTS) $(SPHINX_SOURCEDIR) $(SPHINX_BUILDDIR)/html
+
+format: install-dev
+	$(YAPF) $(YAPF_OPTIONS) .
